@@ -1,14 +1,19 @@
 import socket
 import os
 import json
+import math
 
 # サーバで提供する関数
 def subtract(a, b):
     return a - b
 
+def floor(x):
+    return math.floor(x)  # xを切り捨てて整数に
+
 # 利用可能な関数を辞書（ハッシュマップ）で管理
 METHODS = {
-    "subtract": subtract
+    "subtract": subtract,
+    "floor": floor
 }
 
 #ソケットの作成

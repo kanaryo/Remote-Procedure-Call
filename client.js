@@ -6,17 +6,29 @@ const fs = require("fs");
 const socketPath = "/tmp/socket_file";
 
 //リクエストデータ(jsオブジェクト)
-const request = {
-  method: "subtract",
-  params: [42, 23],
-  param_types: ["int", "int"],
-  id: 1
-};
+const requests = [
+  {
+    method: "subtract",
+    params: [42, 23],
+    param_types: ["int", "int"],
+    id: 1
+  },
+  {
+    method: "floor",
+    params: [4.7],
+    param_types: ["float"],
+    id: 2
+  }
+];
 
 //サーバへの接続と通信
 const client = net.createConnection(socketPath, () => {
   console.log("Connected to RPC server");
-  client.write(JSON.stringify(request)); //jsonに変換して送信
+
+  for (const req of requests) {
+    client.write(JSON.stringify(req)); // JSON文字列に変換して送信
+  }  
+  
   console.log("Waiting for results...");
 });
 
