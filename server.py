@@ -10,10 +10,30 @@ def subtract(a, b):
 def floor(x):
     return math.floor(x)  # xを切り捨てて整数に
 
+def nroot(n, x):
+    if n == 0:
+        raise ValueError("n cannot be zero")
+    return x ** (1 / n)
+
+def reverse(s):
+    return s[::-1]
+
+def validAnagram(str1, str2):
+    return sorted(str1) == sorted(str2)
+
+def sort(strArr):
+    if not isinstance(strArr, list):
+        raise ValueError("Input must be a list of strings")
+    return sorted(strArr)
+
 # 利用可能な関数を辞書（ハッシュマップ）で管理
 METHODS = {
     "subtract": subtract,
-    "floor": floor
+    "floor": floor,
+    "nroot": nroot,
+    "reverse": reverse,
+    "validAnagram": validAnagram,
+    "sort": sort
 }
 
 #ソケットの作成
@@ -41,60 +61,53 @@ while True:
     connection, client_address = sock.accept()
     try:
         print('Connection established from', client_address)
-        
+        buffer = ""  # 受信データをためるバッファ
+
         while True:
-            #データ取得
             data = connection.recv(1024)
             if not data:
                 print("No more data from client.")
-                break            
-            
-            #データを出力してデバッグ
-            # if data:
-            #     print("Received data:", data.decode('utf-8'))
-            # else:
-            #     print("No more data from client.")
-            #     break   
-            
-            decoded_data = data.decode('utf-8')
-            print("Received data:", decoded_data)
-            
-            try:
-                request = json.loads(decoded_data) #JSON文字列をPythonの辞書（dict）に変換
-                method = request.get("method")
-                params = request.get("params", [])
-                request_id = request.get("id")  
+                break
 
-                if method in METHODS:
-                    result = METHODS[method](*params) #辞書 METHODS に対してキー method を指定して、その値（関数）を取得。引数にparamsを展開して渡す
-                    print("Calculation result:", result)  # ここで結果を出力してデバッグ
+            buffer += data.decode('utf-8')
 
-                    response = {
-                        "result": result,
-                        "error": None,
-                        "id": request_id
-                    }
-                else:
+            # 改行で複数リクエストを分割処理
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                if not line.strip():
+                    continue
+
+                print("Received data:", line)
+
+                try:
+                    request = json.loads(line)
+                    method = request.get("method")
+                    params = request.get("params", [])
+                    request_id = request.get("id")
+
+                    if method in METHODS:
+                        result = METHODS[method](*params)
+                        print("Calculation result:", result)
+                        response = {
+                            "result": result,
+                            "error": None,
+                            "id": request_id
+                        }
+                    else:
+                        response = {
+                            "result": None,
+                            "error": f"Method '{method}' not found",
+                            "id": request_id
+                        }
+                except Exception as e:
                     response = {
                         "result": None,
-                        "error": f"Method '{method}' not found",
-                        "id": request_id
+                        "error": str(e),
+                        "id": None
                     }
-            
-            except Exception as e:
-                response = {
-                    "result": None,
-                    "error": str(e),
-                    "id": None
-                }
-                
-            # レスポンスをクライアントに送信
-            response_json = json.dumps(response) #Pythonの辞書（response）をJSON形式の文字列に変換
-            connection.sendall(response_json.encode('utf-8')) #JSON文字列をUTF-8エンコードして、バイト列に変換。接続中のクライアントに対して、エンコードしたバイト列（JSONレスポンス）をすべて送信。
-            
-        else:
-            print('no data from', client_address)
-            break
+
+                response_json = json.dumps(response) + '\n'  # 忘れずに改行つけて返す
+                connection.sendall(response_json.encode('utf-8'))
 
     finally:
         print("Closing current connection")
